@@ -1,0 +1,17 @@
+services:
+  mariadb:
+    image: mariadb:lts
+    container_name: mariadb_server
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PWD}
+      MARIADB_DATABASE: scheduling_db
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PWD}
+    #volumes:
+    #  - mariadb_data:/var/lib/mysql
+
+#volumes:
+#  mariadb_data:
