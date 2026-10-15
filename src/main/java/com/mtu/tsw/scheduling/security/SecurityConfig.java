@@ -34,15 +34,12 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain config(HttpSecurity http) {
+        filter.setPublicPaths("/api/auth/login");
+
         http
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(
-                auth -> auth
-                    .requestMatchers("/api/auth/**").permitAll()
-                    .anyRequest().authenticated()
-            )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class)
             ;
