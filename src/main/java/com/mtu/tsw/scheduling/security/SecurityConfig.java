@@ -34,7 +34,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain config(HttpSecurity http) {
-        filter.setPublicPaths("/api/auth/login");
+        filter.setPublicPaths("/api/auth/login", "/api/auth/create");
 
         http
             .csrf(csrf -> csrf.disable())

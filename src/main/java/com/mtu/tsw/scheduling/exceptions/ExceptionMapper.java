@@ -30,10 +30,36 @@ public class ExceptionMapper {
 
     }
 
+    /**
+     * Used when invalid authentication credentials are provided when accessing a protected endpoint
+     * 401 UNAUTHORIZED
+     */
     public static class InvalidAuthException extends ApiException {
 
         public InvalidAuthException(String message) {
-            super(HttpStatus.FORBIDDEN, message);
+            super(HttpStatus.UNAUTHORIZED, message);
+        }
+    }
+
+    /**
+     * Used when a request argument (parameter) is malformed
+     * 422 UNPROCESSABLE CONTENT
+     */
+    public static class MalformedArgumentException extends ApiException {
+
+        public MalformedArgumentException(String message) {
+            super(HttpStatus.UNPROCESSABLE_CONTENT, message);
+        }
+    }
+
+    /**
+     * Used when an identifier for a given resource already exists
+     * 409 CONFLICT
+     */
+    public static class ResourceConflictException extends ApiException {
+
+        public ResourceConflictException(String message) {
+            super(HttpStatus.CONFLICT, message);
         }
     }
 
