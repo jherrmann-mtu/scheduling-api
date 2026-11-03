@@ -2,6 +2,7 @@ package com.mtu.tsw.scheduling.user;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,6 +24,17 @@ import jakarta.persistence.Id;
 public class UserEntity implements UserDetails {
 
     public UserEntity() {}
+
+    /**
+     * Create new user.
+     * @param username Username
+     * @param password Encrypted password
+     */
+    public UserEntity(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -67,6 +79,19 @@ public class UserEntity implements UserDetails {
         if (role == null || role.isBlank())
             return Optional.empty();
         return Optional.of(role);
+    }
+
+     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UserEntity other = (UserEntity) o;
+        return Objects.equals(username, other.username);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(username);
     }
 
 }

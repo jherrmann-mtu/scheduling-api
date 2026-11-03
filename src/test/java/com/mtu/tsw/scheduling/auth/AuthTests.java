@@ -27,6 +27,8 @@ import com.mtu.tsw.scheduling.AuthController.AuthRequest;
 import com.mtu.tsw.scheduling.security.JwtService;
 import com.mtu.tsw.scheduling.security.SecurityConfig;
 import com.mtu.tsw.scheduling.security.UserDetailsServiceImpl;
+import com.mtu.tsw.scheduling.user.UserEntity;
+import com.mtu.tsw.scheduling.user.UserRepository;
 
 
 @WebMvcTest
@@ -41,6 +43,9 @@ public class AuthTests {
 
     @MockitoBean
     private UserDetailsServiceImpl userService;
+
+    @MockitoBean
+    private UserRepository userRepo;
 
     private JsonMapper mapper = new JsonMapper();
 
@@ -66,6 +71,8 @@ public class AuthTests {
         });
     }
 
+    // Login Tests
+
     @Test
     public void validLogin() throws Exception {
         mockMvc.perform(
@@ -88,7 +95,7 @@ public class AuthTests {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(mapper.writeValueAsString(new AuthRequest("eviluser", "testpwd")))
         )
-        .andExpect(status().isForbidden())
+        .andExpect(status().isUnauthorized())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.message").value("Invalid credentials"))
         ;
@@ -102,7 +109,7 @@ public class AuthTests {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(mapper.writeValueAsString(new AuthRequest("testuser", "wrongpwd")))
         )
-        .andExpect(status().isForbidden())
+        .andExpect(status().isUnauthorized())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.message").value("Invalid credentials"))
         ;
@@ -118,4 +125,83 @@ public class AuthTests {
         ;
     }
 
+
+    // Create Account Tests
+
+    @Test
+    public void validCreate() throws Exception {
+
+        mockMvc.perform(
+            post("/api/auth/create")
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AuthRequest("newUser1", "ValidPassword1")))
+        )
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.token").isString())
+        ;
+
+        Mockito.verify(userRepo).save(new UserEntity("newUser1", encoder.encode("ValidPassword1")));
+    }
+
+    @Test
+    public void invalidCreate_BadUser() throws Exception {
+        assertMalformedUsername("");
+        assertMalformedUsername("Invalid-chars");
+        assertMalformedUsername("No spaces");
+        assertMalformedUsername("Invalid_chars");
+        assertMalformedUsername("Invalid$chars");
+    }
+
+    private void assertMalformedUsername(String username) throws Exception {
+        mockMvc.perform(
+            post("/api/auth/create")
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AuthRequest(username, "ValidPassword")))
+        )
+        .andExpect(status().isUnprocessableContent())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.message").value("Malformed username"))
+        ;
+    }
+
+    @Test
+    public void invalidCreate_BadPwd() throws Exception {
+        mockMvc.perform(
+            post("/api/auth/create")
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AuthRequest("newUser1", "")))
+        )
+        .andExpect(status().isUnprocessableContent())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.message").value("Malformed password"))
+        ;
+    }
+
+    @Test
+    public void invalidCreate_UserTaken() throws Exception {
+        mockMvc.perform(
+            post("/api/auth/create")
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AuthRequest("testuser", "ValidPassword")))
+        )
+        .andExpect(status().isConflict())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.message").value("Username taken"))
+        ;
+    }
+
+    @Test
+    public void invalidCreate_Malformed() throws Exception {
+        mockMvc.perform(
+            post("/api/auth/create")
+                .accept(MediaType.APPLICATION_JSON) // no body
+        )
+        .andExpect(status().isBadRequest())
+        ;
+    }
 }
