@@ -49,8 +49,8 @@ public class JwtTests {
             String key1 = genKey.invoke(jwt).toString();
             String key2 = genKey.invoke(jwt).toString();
 
-            assertEquals(key1.length(), 256, "Key should be 265 chars long");
-            assertEquals(key2.length(), 256, "Key should be 265 chars long");
+            assertEquals(key1.length(), 256, "Key should be 256 chars long");
+            assertEquals(key2.length(), 256, "Key should be 256 chars long");
             assertNotEquals(key1, key2, "Keys should be randomly generated and not match");
             
 
