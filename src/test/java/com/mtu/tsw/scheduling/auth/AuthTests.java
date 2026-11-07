@@ -22,6 +22,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.mtu.tsw.scheduling.AuthController;
 import com.mtu.tsw.scheduling.Common;
 import com.mtu.tsw.scheduling.AuthController.AuthRequest;
 import com.mtu.tsw.scheduling.security.JwtService;
@@ -31,7 +32,7 @@ import com.mtu.tsw.scheduling.user.UserEntity;
 import com.mtu.tsw.scheduling.user.UserRepository;
 
 
-@WebMvcTest
+@WebMvcTest(AuthController.class)
 @Import({JwtService.class, Common.class, SecurityConfig.class})
 public class AuthTests {
 
