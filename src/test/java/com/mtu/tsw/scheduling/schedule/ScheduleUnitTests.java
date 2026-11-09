@@ -9,7 +9,6 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.TimeZone;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -54,9 +53,9 @@ public class ScheduleUnitTests {
         Mockito.when(mockApt.getId()).thenReturn(UUID.randomUUID());
         Mockito.when(mockApt.getHost()).thenReturn(UUID.randomUUID());
 
-        Mockito.when(mockApt.getStart()).thenReturn(LocalDateTime.now());
-        Mockito.when(mockApt.getEnd()).thenReturn(LocalDateTime.now());
-        Mockito.when(mockApt.getTimezone()).thenReturn(ZoneId.systemDefault());
+        ZoneId zone = ZoneId.of("America/Detroit");
+        Mockito.when(mockApt.getStart()).thenReturn(LocalDateTime.now().atZone(zone).toEpochSecond());
+        Mockito.when(mockApt.getEnd()).thenReturn(LocalDateTime.now().plusHours(1).atZone(zone).toEpochSecond());
 
         Mockito.when(mockUser.getId()).thenReturn(UUID.randomUUID());
     }
@@ -67,9 +66,9 @@ public class ScheduleUnitTests {
         List<Runnable> runs = new ArrayList<>();
 
         runs.add(() -> scheduleService.getUserAppointments(null, null, 0));
-        runs.add(() -> scheduleService.getUserAppointments(null, null, 0, null, null, null));
-        runs.add(() -> scheduleService.isAvailable(null, null, null, null));
-        runs.add(() -> scheduleService.getAvailableAppointments(null, 0, null, null, null));
+        runs.add(() -> scheduleService.getUserAppointments(null, null, 0, 0, 0));
+        runs.add(() -> scheduleService.isAvailable(null, 0, 0));
+        runs.add(() -> scheduleService.getAvailableAppointments(null, 0, 0, 0));
         runs.add(() -> scheduleService.searchAvailableHosts(null, 0));
         runs.add(() -> scheduleService.deleteAppointment(null, null));
         runs.add(() -> scheduleService.saveAppointment(null, null));
@@ -83,13 +82,14 @@ public class ScheduleUnitTests {
     public void range_throwsWhenInvalidRange() {
         List<Runnable> runs = new ArrayList<>();
 
-        LocalDateTime later = LocalDateTime.ofEpochSecond(200, 0, ZoneOffset.UTC);
-        LocalDateTime earlier = LocalDateTime.ofEpochSecond(100, 0, ZoneOffset.UTC);
-        TimeZone tz = TimeZone.getDefault();
+        ZoneId tz = ZoneId.of("America/Detroit");
+        long later = LocalDateTime.ofEpochSecond(200, 0, ZoneOffset.UTC).atZone(tz).toEpochSecond();
+        long earlier = LocalDateTime.ofEpochSecond(100, 0, ZoneOffset.UTC).atZone(tz).toEpochSecond();
+        
 
-        runs.add(() -> scheduleService.getUserAppointments(UUID.randomUUID(), HostStatus.EITHER, 1, later, earlier, tz));
-        runs.add(() -> scheduleService.isAvailable(UUID.randomUUID(), later, earlier, tz));
-        runs.add(() -> scheduleService.getAvailableAppointments(List.of(), 1, later, earlier, tz));
+        runs.add(() -> scheduleService.getUserAppointments(UUID.randomUUID(), HostStatus.EITHER, 1, later, earlier));
+        runs.add(() -> scheduleService.isAvailable(UUID.randomUUID(), later, earlier));
+        runs.add(() -> scheduleService.getAvailableAppointments(List.of(), 1, later, earlier));
 
         runs.forEach((runnable) -> {
             assertThrows(IllegalArgumentException.class, runnable::run);

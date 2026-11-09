@@ -1,9 +1,7 @@
 package com.mtu.tsw.scheduling.schedule;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import jakarta.persistence.CollectionTable;
@@ -29,9 +27,46 @@ public class AppointmentEntity {
             apt.name,
             apt.description,
             apt.location,
-            apt.start,
-            apt.end,
+            apt.getStart(),
+            apt.getEnd(),
             apt.isPublic
+        );
+    }
+    
+    public record AppointmentRequest(
+        Optional<List<UUID>> guests,
+        Optional<String> name,
+        Optional<String> description,
+        Optional<String> location,
+        Optional<Long> start,
+        Optional<Long> end,
+        Optional<Boolean> isPublic
+    ) {}
+
+    public static AppointmentEntity createAppointment(UUID host, List<UUID> guests, String name, String description, String location, long start, long end, boolean isPublic) {
+        return new AppointmentEntity(null,
+            host,
+            guests,
+            name,
+            description,
+            location,
+            start,
+            end,
+            isPublic
+        );
+    }
+
+    public static AppointmentEntity updateAppointment(AppointmentEntity entity, AppointmentRequest request) {
+        return new AppointmentEntity(
+            entity.getId(), 
+            entity.getHost(),
+            request.guests().orElse(entity.getGuests()),
+            request.name().orElse(entity.getName()),
+            request.description().orElse(entity.getDescription()),
+            request.location().orElse(entity.getLocation()),
+            request.start().orElse(entity.getStart()),
+            request.end().orElse(entity.getEnd()),
+            request.isPublic().orElse(entity.isPublic())
         );
     }
 
@@ -57,18 +92,17 @@ public class AppointmentEntity {
     private String location;
 
     @Column(nullable = false)
-    private ZonedDateTime start;
+    private long start;
 
     @Column(nullable = false)
-    private ZonedDateTime end;
+    private long end;
 
     @Column(nullable = false)
     private boolean isPublic;
 
     public AppointmentEntity() {}
 
-    private AppointmentEntity(UUID id, UUID host, List<UUID> guests, String name, String description, String location,
-            ZonedDateTime start, ZonedDateTime end, boolean isPublic) {
+    private AppointmentEntity(UUID id, UUID host, List<UUID> guests, String name, String description, String location, long start, long end, boolean isPublic) {
         this.id = id;
         this.host = host;
         this.guests = guests;
@@ -104,16 +138,16 @@ public class AppointmentEntity {
         return location;
     }
 
-    public LocalDateTime getStart() {
-        return start.toLocalDateTime();
+    public long getStart() {
+        return start;
     }
 
-    public LocalDateTime getEnd() {
-        return end.toLocalDateTime();
+    public long getEnd() {
+        return end;
     }
 
-    public ZoneId getTimezone() {
-        return start.getZone();
+    public boolean isPublic() {
+        return isPublic;
     }
 
     @Override

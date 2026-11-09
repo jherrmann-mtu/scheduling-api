@@ -1,9 +1,8 @@
 package com.mtu.tsw.scheduling.schedule;
 
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.List;
-import java.util.TimeZone;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Limit;
@@ -41,6 +40,19 @@ public class ScheduleService {
         return limit;
     }
 
+    public Optional<AppointmentEntity> getAppointment(UUID userID, UUID appt) {
+        var opt = appointmentRepository.findById(appt);
+        if (opt.isEmpty())
+            return opt;
+
+        var apptEntity = opt.get();
+
+        if (apptEntity.getHost().equals(userID) || apptEntity.getGuests().contains(userID))
+            return opt;
+        
+        return Optional.empty();
+    }
+
     /**
      * Get appointments which the given user is included in.
      * 
@@ -55,11 +67,11 @@ public class ScheduleService {
         limit = normalizeLimit(limit);
 
         if (hostStatus == HostStatus.EITHER) {
-            return appointmentRepository.findByParticipation(userID, Limit.of(limit));
+            return appointmentRepository.findByParticipation(userID, Instant.now().getEpochSecond(), Limit.of(limit));
         }else if (hostStatus == HostStatus.GUEST) {
-            return appointmentRepository.findByGuest(userID, Limit.of(limit));
+            return appointmentRepository.findByGuest(userID, Instant.now().getEpochSecond(), Limit.of(limit));
         }else if (hostStatus == HostStatus.HOST) {
-            return appointmentRepository.findByHost(userID, Limit.of(limit));
+            return appointmentRepository.findByHost(userID, Instant.now().getEpochSecond(), Limit.of(limit));
         }
 
         throw new IllegalArgumentException("HostStatus must be one of 'EITHER', 'GUEST', 'HOST'");
@@ -73,19 +85,15 @@ public class ScheduleService {
      * @param limit Maximum length of returned list
      * @param rangeStart Beginning of datetime range
      * @param rangeEnd End of datetime range
-     * @param timezone Users' current timezone. Other times will use this timezone
      * @return List of appointments. May be empty.
      */
-    public List<AppointmentEntity> getUserAppointments(UUID userID, HostStatus hostStatus, int limit, LocalDateTime rangeStart, LocalDateTime rangeEnd, TimeZone timezone) {
-        throwForNull(userID, hostStatus, rangeStart, rangeEnd, timezone);
+    public List<AppointmentEntity> getUserAppointments(UUID userID, HostStatus hostStatus, int limit, long start, long end) {
+        throwForNull(userID, hostStatus, start, end);
 
-        if (rangeEnd.isBefore(rangeStart))
+        if (end < start)
             throw new IllegalArgumentException("Start of time range must be before end");
 
         limit = normalizeLimit(limit);
-
-        var start = ZonedDateTime.of(rangeStart, timezone.toZoneId());
-        var end = ZonedDateTime.of(rangeEnd, timezone.toZoneId());
 
         if (hostStatus == HostStatus.EITHER) {
             return appointmentRepository.findByParticipationRange(userID, Limit.of(limit), start, end);
@@ -103,11 +111,10 @@ public class ScheduleService {
      * @param userID User to check against
      * @param rangeStart Beginning of datetime range
      * @param rangeEnd End of datetime range
-     * @param timezone Timezone of given date times
      * @return True if the user has no appointments during the given time, false otherwise.
      */
-    public boolean isAvailable(UUID userID, LocalDateTime rangeStart, LocalDateTime rangeEnd, TimeZone timezone) {
-        return isAvailable(null, userID, rangeStart, rangeEnd, timezone);
+    public boolean isAvailable(UUID userID, long rangeStart, long rangeEnd) {
+        return isAvailable(null, userID, rangeStart, rangeEnd);
     }
 
     /**
@@ -116,19 +123,15 @@ public class ScheduleService {
      * @param userID User to check against
      * @param rangeStart Beginning of datetime range
      * @param rangeEnd End of datetime range
-     * @param timezone Timezone of given date times
      * @return True if the user has no appointments during the given time, false otherwise.
      */
-    private boolean isAvailable(UUID appointmentID, UUID userID, LocalDateTime rangeStart, LocalDateTime rangeEnd, TimeZone timezone) {
-        throwForNull(userID, rangeStart, rangeEnd, timezone);
+    private boolean isAvailable(UUID appointmentID, UUID userID, long rangeStart, long rangeEnd) {
+        throwForNull(userID, rangeStart, rangeEnd);
 
-        if (rangeEnd.isBefore(rangeStart))
+        if (rangeEnd <= rangeStart)
             throw new IllegalArgumentException("Start of time range must be before end");
 
-        var start = ZonedDateTime.of(rangeStart, timezone.toZoneId());
-        var end = ZonedDateTime.of(rangeEnd, timezone.toZoneId());
-
-        return appointmentRepository.findByParticipationRange(userID, Limit.of(2), start, end)
+        return appointmentRepository.findByParticipationRange(userID, Limit.of(2), rangeStart, rangeEnd)
             .stream().filter((a) -> !a.getId().equals(appointmentID))
             .count() == 0;
     }
@@ -139,19 +142,15 @@ public class ScheduleService {
      * @param limit Maximum length of returned list
      * @param rangeStart Beginning of datetime range
      * @param rangeEnd End of datetime range
-     * @param timezone Timezone of given date times
      * @return List of appointments. May be empty.
      */
-    public List<AppointmentEntity> getAvailableAppointments(List<UUID> hosts, int limit, LocalDateTime rangeStart, LocalDateTime rangeEnd, TimeZone timezone) {
-        throwForNull(hosts, rangeStart, rangeEnd, timezone);
+    public List<AppointmentEntity> getAvailableAppointments(List<UUID> hosts, int limit, long start, long end) {
+        throwForNull(hosts, start, end);
 
-        if (rangeEnd.isBefore(rangeStart))
+        if (end <= start)
             throw new IllegalArgumentException("Start of time range must be before end");
 
         limit = normalizeLimit(limit);
-
-        var start = ZonedDateTime.of(rangeStart, timezone.toZoneId());
-        var end = ZonedDateTime.of(rangeEnd, timezone.toZoneId());
 
         if (hosts.isEmpty())
             return appointmentRepository.findAnyByRange(Limit.of(limit), start, end);
@@ -185,15 +184,15 @@ public class ScheduleService {
             appointmentRepository.save(AppointmentEntity.removeGuest(appointment, currentUser.getId()));
             notificationService.sendGuestCancelNotification(appointment, currentUser);
         }else {
-            throw new IllegalArgumentException("Users can only delete appointments which they are either a host or guest of");
+            throw new IllegalStateException("Users can only delete appointments which they are either a host or guest of");
         }
     }
 
-    public void saveAppointment(AppointmentEntity appointment, UserEntity currentUser) {
+    public AppointmentEntity saveAppointment(AppointmentEntity appointment, UserEntity currentUser) {
         throwForNull(appointment, currentUser);
 
-        if (!isAvailable(appointment.getId(), currentUser.getId(), appointment.getStart(), appointment.getEnd(), TimeZone.getTimeZone(appointment.getTimezone()))) {
-            throw new IllegalArgumentException("User must be available during appointment time");
+        if (!isAvailable(appointment.getId(), currentUser.getId(), appointment.getStart(), appointment.getEnd())) {
+            throw new IllegalStateException("User must be available during appointment time");
         }
 
         if (!appointment.getHost().equals(currentUser.getId())) {
@@ -202,14 +201,16 @@ public class ScheduleService {
 
         if (appointment.getId() == null) {
             // new appointment
-            appointmentRepository.save(appointment);
+            var rtn = appointmentRepository.save(appointment);
             notificationService.sendCreateNotification(appointment);
-            return;
+            return rtn;
         }
 
         var before = appointmentRepository.findById(appointment.getId());
-        appointmentRepository.save(appointment);
+        var rtn = appointmentRepository.save(appointment);
         notificationService.sendEditNotification(before.get(), appointment);
+
+        return rtn;
     }
 
 }
