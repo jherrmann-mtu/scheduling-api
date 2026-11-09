@@ -60,9 +60,9 @@ public class AuthController {
             throw new MalformedArgumentException("Malformed password");
         }
 
-        var details = userDetailsService.loadUserByUsername(req.username);
+        var details = userRepo.findByUsername(req.username);
 
-        if (details != null) {
+        if (details.isPresent()) {
             throw new ResourceConflictException("Username taken");
         }
 

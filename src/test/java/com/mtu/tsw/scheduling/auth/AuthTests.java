@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Collection;
+import java.util.Optional;
 
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +71,8 @@ public class AuthTests {
             }
             
         });
+
+        Mockito.when(userRepo.findByUsername("testuser")).thenReturn(Optional.of(new UserEntity("testuser", "")));
     }
 
     // Login Tests

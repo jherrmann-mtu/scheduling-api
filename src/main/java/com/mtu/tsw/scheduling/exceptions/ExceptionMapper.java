@@ -63,4 +63,15 @@ public class ExceptionMapper {
         }
     }
 
+    /**
+     * Used when a resource cannot be found (doesn't exist)
+     * 404 NOT FOUND
+     */
+    public static class ResourceAbsentException extends ApiException {
+
+        public ResourceAbsentException(String message) {
+            super(HttpStatus.NOT_FOUND, message);
+        }
+    }
+
 }
