@@ -5,10 +5,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.Collection;
 import java.util.Optional;
 
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -16,16 +14,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.mtu.tsw.scheduling.AuthController;
-import com.mtu.tsw.scheduling.Common;
 import com.mtu.tsw.scheduling.AuthController.AuthRequest;
+import com.mtu.tsw.scheduling.Common;
 import com.mtu.tsw.scheduling.security.JwtService;
 import com.mtu.tsw.scheduling.security.SecurityConfig;
 import com.mtu.tsw.scheduling.security.UserDetailsServiceImpl;
