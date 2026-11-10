@@ -34,7 +34,7 @@ import com.mtu.tsw.scheduling.user.UserRepository;
 
 
 @WebMvcTest(AuthController.class)
-@Import({JwtService.class, Common.class, SecurityConfig.class})
+@Import({JwtService.class, Common.class, SecurityConfig.class, UserDetailsServiceImpl.class})
 public class AuthTests {
 
     @Autowired
@@ -44,35 +44,13 @@ public class AuthTests {
     private PasswordEncoder encoder;
 
     @MockitoBean
-    private UserDetailsServiceImpl userService;
-
-    @MockitoBean
     private UserRepository userRepo;
 
     private JsonMapper mapper = new JsonMapper();
 
     @BeforeEach
     public void setup() {
-        Mockito.when(userService.loadUserByUsername("testuser")).thenReturn(new UserDetails() {
-
-            @Override
-            public Collection<? extends GrantedAuthority> getAuthorities() {
-                throw new UnsupportedOperationException("Unimplemented method 'getAuthorities'");
-            }
-
-            @Override
-            public @Nullable String getPassword() {
-                return encoder.encode("testpwd");
-            }
-
-            @Override
-            public String getUsername() {
-                return "testuser";
-            }
-            
-        });
-
-        Mockito.when(userRepo.findByUsername("testuser")).thenReturn(Optional.of(new UserEntity("testuser", "")));
+        Mockito.when(userRepo.findByUsername("testuser")).thenReturn(Optional.of(new UserEntity("testuser", encoder.encode("testpwd"))));
     }
 
     // Login Tests
