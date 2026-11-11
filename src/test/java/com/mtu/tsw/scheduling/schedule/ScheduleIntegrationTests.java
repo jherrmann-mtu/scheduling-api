@@ -353,7 +353,7 @@ class ScheduleIntegrationTests {
     @Test
     void searchAvailableHosts_delegatesToUserRepository() {
         var found = mock(UserEntity.class);
-        when(userRepository.searchByUsername("al", Limit.of(5))).thenReturn(List.of(found));
+        when(userRepository.searchByUsername("%al%", Limit.of(5))).thenReturn(List.of(found));
 
         assertThat(service.searchAvailableHosts("al", 5)).containsExactly(found);
     }
@@ -362,7 +362,7 @@ class ScheduleIntegrationTests {
     void searchAvailableHosts_invalidLimit_usesTen() {
         service.searchAvailableHosts("al", 0);
 
-        verify(userRepository).searchByUsername("al", Limit.of(10));
+        verify(userRepository).searchByUsername("%al%", Limit.of(10));
     }
 
     @Test
