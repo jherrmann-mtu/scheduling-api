@@ -20,7 +20,7 @@ import jakarta.persistence.Id;
 /**
  * Represents a user in the database.
  */
-@Entity(name="user")
+@Entity(name="Users")
 public class UserEntity implements UserDetails {
 
     public UserEntity() {}

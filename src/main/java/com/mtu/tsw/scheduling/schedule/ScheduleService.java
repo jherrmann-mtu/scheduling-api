@@ -168,7 +168,11 @@ public class ScheduleService {
         throwForNull(usernameQuery);
         limit = normalizeLimit(limit);
 
-        return userRepository.searchByUsername(usernameQuery, limit);
+        if (usernameQuery.isBlank()) {
+            throw new IllegalArgumentException("Username query may not be blank");
+        }
+
+        return userRepository.searchByUsername("%" + usernameQuery + "%", Limit.of(limit));
     }
 
     public void deleteAppointment(AppointmentEntity appointment, UserEntity currentUser) {
