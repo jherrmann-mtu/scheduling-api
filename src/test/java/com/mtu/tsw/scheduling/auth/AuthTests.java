@@ -5,9 +5,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.Collection;
+import java.util.Optional;
 
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -15,15 +14,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.mtu.tsw.scheduling.Common;
+import com.mtu.tsw.scheduling.AuthController;
 import com.mtu.tsw.scheduling.AuthController.AuthRequest;
+import com.mtu.tsw.scheduling.Common;
 import com.mtu.tsw.scheduling.security.JwtService;
 import com.mtu.tsw.scheduling.security.SecurityConfig;
 import com.mtu.tsw.scheduling.security.UserDetailsServiceImpl;
@@ -31,8 +29,8 @@ import com.mtu.tsw.scheduling.user.UserEntity;
 import com.mtu.tsw.scheduling.user.UserRepository;
 
 
-@WebMvcTest
-@Import({JwtService.class, Common.class, SecurityConfig.class})
+@WebMvcTest(AuthController.class)
+@Import({JwtService.class, Common.class, SecurityConfig.class, UserDetailsServiceImpl.class})
 public class AuthTests {
 
     @Autowired
@@ -42,33 +40,13 @@ public class AuthTests {
     private PasswordEncoder encoder;
 
     @MockitoBean
-    private UserDetailsServiceImpl userService;
-
-    @MockitoBean
     private UserRepository userRepo;
 
     private JsonMapper mapper = new JsonMapper();
 
     @BeforeEach
     public void setup() {
-        Mockito.when(userService.loadUserByUsername("testuser")).thenReturn(new UserDetails() {
-
-            @Override
-            public Collection<? extends GrantedAuthority> getAuthorities() {
-                throw new UnsupportedOperationException("Unimplemented method 'getAuthorities'");
-            }
-
-            @Override
-            public @Nullable String getPassword() {
-                return encoder.encode("testpwd");
-            }
-
-            @Override
-            public String getUsername() {
-                return "testuser";
-            }
-            
-        });
+        Mockito.when(userRepo.findByUsername("testuser")).thenReturn(Optional.of(new UserEntity("testuser", encoder.encode("testpwd"))));
     }
 
     // Login Tests

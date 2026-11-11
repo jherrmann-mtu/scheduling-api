@@ -1,7 +1,6 @@
 package com.mtu.tsw.scheduling;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,13 +23,11 @@ public class AuthController {
     public record AuthRequest(String username, String password) {}
 
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
     private final UserRepository userRepo;
     private final PasswordEncoder encoder;
 
-    public AuthController(JwtService jwtService, UserDetailsService user, UserRepository userRepo, PasswordEncoder encoder) {
+    public AuthController(JwtService jwtService, UserRepository userRepo, PasswordEncoder encoder) {
         this.jwtService = jwtService;
-        this.userDetailsService = user;
         this.encoder = encoder;
         this.userRepo = userRepo;
     }
@@ -38,9 +35,9 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest req) {
         
-        var details = userDetailsService.loadUserByUsername(req.username);
+        var details = userRepo.findByUsername(req.username);
         
-        if (details == null || !encoder.matches(req.password, details.getPassword())) {
+        if (details.isEmpty() || !encoder.matches(req.password, details.get().getPassword())) {
             throw new InvalidAuthException("Invalid credentials");
         }
 
@@ -60,9 +57,9 @@ public class AuthController {
             throw new MalformedArgumentException("Malformed password");
         }
 
-        var details = userDetailsService.loadUserByUsername(req.username);
+        var details = userRepo.findByUsername(req.username);
 
-        if (details != null) {
+        if (details.isPresent()) {
             throw new ResourceConflictException("Username taken");
         }
 

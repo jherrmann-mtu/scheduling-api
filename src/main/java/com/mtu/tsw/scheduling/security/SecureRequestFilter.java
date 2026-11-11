@@ -68,10 +68,16 @@ public class SecureRequestFilter extends OncePerRequestFilter {
 
         String token = auth.substring(7);
 
-        if (!jwtService.isTokenUnexpired(token)) {
-            writeApiErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Expired token");
+        try {
+            if (!jwtService.isTokenUnexpired(token)) {
+                writeApiErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Expired token");
+                return;
+            }
+        }catch (Exception e) {
+            writeApiErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Invalid token");
             return;
         }
+        
 
         Optional<String> username = jwtService.getUsername(token);
         if (username.isEmpty()) {
